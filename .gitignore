@@ -1,0 +1,7 @@
+/target
+
+*.out
+*.o
+*.asm
+*.c
+bin
