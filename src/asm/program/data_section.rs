@@ -41,7 +41,7 @@ impl AsAsm for DataSection {
         let mut out: String = "section .data\n".into();
 
         for d in &self.data {
-            out += &format!("    {}", d.as_asm())
+            out += &format!("    {}\n", d.as_asm())
         }
 
         out
