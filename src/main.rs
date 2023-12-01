@@ -13,7 +13,7 @@ fn main() -> std::io::Result<()> {
         .unwrap_or("Hello World, this is my tiny executable\n".into());
     let word_len = word.len() as u32;
 
-    let mut program = {
+    let program = {
         use tiny_elf::asm::{Memory, Mnemonic::*, Register::*};
 
         Program::default()
@@ -37,7 +37,7 @@ fn main() -> std::io::Result<()> {
             .add(Mov(Rbx, 0u32.into()))
             .add(Syscall32)
     };
-    program.insert_data("msg", &word);
+    let program = program.insert_data("msg", &word);
 
     let mut elf = Elf::new(program.clone());
     elf.add_data(program.data(), Flags::all());

@@ -21,8 +21,9 @@ impl Program {
         self
     }
 
-    pub fn insert_data(&mut self, key: &str, value: &str) {
+    pub fn insert_data(mut self, key: &str, value: &str) -> Self {
         self.data.insert(key.into(), value.into());
+        self
     }
 
     pub fn data(&self) -> &DataSection {
