@@ -5,7 +5,7 @@ fn main() -> std::io::Result<()> {
     use tiny_elf::{
         asm::{AsAsm, Program},
         prelude::*,
-        program_header::flags::Flags,
+        program_header::Flags,
     };
 
     let word = env::args()
