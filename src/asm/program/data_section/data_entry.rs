@@ -14,6 +14,10 @@ impl DataEntry {
     pub fn key(&self) -> &str {
         self.key.as_ref()
     }
+
+    pub fn value(&self) -> &str {
+        self.value.as_ref()
+    }
 }
 
 impl AsBytes for DataEntry {

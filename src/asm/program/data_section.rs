@@ -23,7 +23,7 @@ impl DataSection {
         let mut len: u32 = 0;
         for entry in &self.data {
             map.insert(entry.key().to_string(), start_addr + len);
-            len += entry.as_asm().len() as u32;
+            len += entry.value().len() as u32;
         }
 
         map
