@@ -26,6 +26,12 @@ impl From<&str> for Memory {
     }
 }
 
+impl From<String> for Memory {
+    fn from(label: String) -> Self {
+        Self { addr: 0, label }
+    }
+}
+
 impl AsBytes for Memory {
     fn as_bytes(&self) -> Vec<u8> {
         self.addr.as_bytes()
