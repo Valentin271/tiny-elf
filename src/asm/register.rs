@@ -12,6 +12,7 @@ pub enum Register {
     Rdx,
     Rsi,
     Rsp,
+    Rbp,
 }
 
 impl Register {
@@ -37,6 +38,7 @@ impl AsBytes for Register {
             Register::Rdx => vec![0xC2],
             Register::Rsi => vec![0xC6],
             Register::Rsp => vec![0xC4],
+            Register::Rbp => vec![0xC5],
         }
     }
 }
@@ -51,6 +53,7 @@ impl AsAsm for Register {
             Register::Rdx => "rdx",
             Register::Rsi => "rsi",
             Register::Rsp => "rsp",
+            Register::Rbp => "rbp",
         }
         .into()
     }

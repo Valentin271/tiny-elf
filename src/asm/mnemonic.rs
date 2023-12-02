@@ -8,6 +8,7 @@ use crate::prelude::AsBytes;
 #[derive(Debug, Clone)]
 pub enum Mnemonic {
     Add(Register, Immediate),
+    Call(Memory),
     Cmp(Register, u32),
     Imul(Register, Immediate),
     Je(Memory),
@@ -18,6 +19,8 @@ pub enum Mnemonic {
     Mov(Register, Operand),
     Pop(Register),
     Push(Operand),
+    /// Alias for RETN
+    Ret,
     Sub(Register, Immediate),
     Syscall,
 }
@@ -34,6 +37,12 @@ impl AsBytes for Mnemonic {
                 };
                 inst.append(&mut r.as_bytes());
                 inst.append(&mut imm.as_bytes());
+                inst
+            }
+            // http://ref.x86asm.net/coder64.html#xE8
+            Mnemonic::Call(mem) => {
+                let mut inst = vec![0xE8];
+                inst.append(&mut mem.as_bytes());
                 inst
             }
             // http://ref.x86asm.net/coder64.html#x81_7
@@ -124,6 +133,8 @@ impl AsBytes for Mnemonic {
                 }
                 Operand::Mem(_) => unimplemented!(),
             },
+            // http://ref.x86asm.net/coder64.html#xC3
+            Mnemonic::Ret => vec![0xC3],
             Mnemonic::Sub(r, imm) => {
                 let mut inst = match imm {
                     // http://ref.x86asm.net/coder64.html#x83_5
@@ -145,6 +156,7 @@ impl AsAsm for Mnemonic {
     fn as_asm(&self) -> String {
         match self {
             Mnemonic::Add(r, v) => format!("add {}, {}", r.as_asm(), v.as_asm()),
+            Mnemonic::Call(mem) => format!("call {}", mem.as_asm()),
             Mnemonic::Cmp(r, v) => format!("cmp {}, {}", r.as_asm(), v.as_asm()),
             Mnemonic::Imul(r, imm) => format!("imul {}, {}", r.as_asm(), imm.as_asm()),
             Mnemonic::Je(a) => format!("je {}", a.as_asm()),
@@ -155,6 +167,7 @@ impl AsAsm for Mnemonic {
             Mnemonic::Mov(r, o) => format!("mov {}, {}", r.as_asm(), o.as_asm()),
             Mnemonic::Pop(r) => format!("pop {}", r.as_asm()),
             Mnemonic::Push(o) => format!("push {}", o.as_asm()),
+            Mnemonic::Ret => "ret".into(),
             Mnemonic::Sub(r, v) => format!("sub {}, {}", r.as_asm(), v.as_asm()),
             Mnemonic::Syscall => "syscall".into(),
         }

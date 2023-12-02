@@ -36,6 +36,26 @@ impl Program {
     pub fn label(self, label: &str) -> Self {
         self.add(Mnemonic::Label(label.into()))
     }
+
+    /// Declare a new function.
+    ///
+    /// This is a convenience method to write the prolog of a function.
+    pub fn func(self, label: &str) -> Self {
+        use crate::asm::{Mnemonic::*, Register::*};
+
+        self.label(label)
+            .add(Push(Rbp.into()))
+            .add(Mov(Rbp, Rsp.into()))
+    }
+
+    /// Ends a function.
+    ///
+    /// This is a convenience method to write the epilog of a function.
+    pub fn func_end(self) -> Self {
+        use crate::asm::{Mnemonic::*, Register::*};
+
+        self.add(Mov(Rsp, Rbp.into())).add(Pop(Rbp.into())).add(Ret)
+    }
 }
 
 impl Patchable for Program {
@@ -52,7 +72,8 @@ impl Patchable for Program {
                 Mnemonic::Label(label) => {
                     labels.insert(label.clone(), bytes);
                 }
-                Mnemonic::Je(addr)
+                Mnemonic::Call(addr)
+                | Mnemonic::Je(addr)
                 | Mnemonic::Jg(addr)
                 | Mnemonic::Jl(addr)
                 | Mnemonic::Jmp(addr)
