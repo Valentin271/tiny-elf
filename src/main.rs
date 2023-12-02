@@ -23,7 +23,7 @@ fn main() -> std::io::Result<()> {
             .add(Je("print".into()))
             .label("read")
             .add(Mov(Rax, 0.into()))
-            .add(Mov(Rdi, 1.into()))
+            .add(Mov(Rdi, 0.into()))
             .add(Mov(Rsi, Memory::from("msg").into()))
             .add(Mov(Rdx, word_len.into()))
             .add(Syscall)
