@@ -67,8 +67,8 @@ impl AsBytes for Mnemonic {
                 // http://ref.x86asm.net/coder64.html#x8B
                 Operand::Reg(r2) => {
                     let mut inst = vec![0x48, 0x8B];
-                    inst.append(&mut r.as_bytes_opcode_extend(
-                        *r2.as_bytes().first().expect("Registers are always 1 byte"),
+                    inst.append(&mut r2.as_bytes_opcode_extend(
+                        *r.as_bytes().first().expect("Registers are always 1 byte"),
                     ));
                     inst
                 }
