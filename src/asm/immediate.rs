@@ -3,9 +3,9 @@ use crate::prelude::AsBytes;
 
 #[derive(Debug, Clone)]
 pub enum Immediate {
-    Imm8(u8),
-    Imm16(u16),
-    Imm32(u32),
+    Imm8(i8),
+    Imm16(i16),
+    Imm32(i32),
 }
 
 impl AsBytes for Immediate {
@@ -18,23 +18,19 @@ impl AsBytes for Immediate {
     }
 }
 
-impl From<u8> for Immediate {
-    fn from(value: u8) -> Self {
-        Self::Imm8(value)
-    }
+macro_rules! impl_from_for_immediate {
+    ($ty:ty, $variant:ident) => {
+        impl From<$ty> for Immediate {
+            fn from(value: $ty) -> Self {
+                Self::$variant(value)
+            }
+        }
+    };
 }
 
-impl From<u16> for Immediate {
-    fn from(value: u16) -> Self {
-        Self::Imm16(value)
-    }
-}
-
-impl From<u32> for Immediate {
-    fn from(value: u32) -> Self {
-        Self::Imm32(value)
-    }
-}
+impl_from_for_immediate!(i8, Imm8);
+impl_from_for_immediate!(i16, Imm16);
+impl_from_for_immediate!(i32, Imm32);
 
 impl AsAsm for Immediate {
     fn as_asm(&self) -> String {
