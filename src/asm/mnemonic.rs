@@ -9,6 +9,7 @@ use crate::prelude::AsBytes;
 pub enum Mnemonic {
     Add(Register, Immediate),
     Cmp(Register, u32),
+    Imul(Register, Immediate),
     Je(Memory),
     Jg(Memory),
     Jl(Memory),
@@ -40,6 +41,19 @@ impl AsBytes for Mnemonic {
                 let mut inst = vec![0x48, 0x81];
                 inst.append(&mut r.as_bytes_opcode_extend(7));
                 inst.append(&mut v.as_bytes());
+                inst
+            }
+            Mnemonic::Imul(r, imm) => {
+                let mut inst = match imm {
+                    // http://ref.x86asm.net/coder64.html#x6B
+                    Imm8(_) => vec![0x48, 0x6B],
+                    // http://ref.x86asm.net/coder64.html#x69
+                    Imm16(_) | Imm32(_) => vec![0x48, 0x69],
+                };
+                inst.append(&mut r.as_bytes_opcode_extend(
+                    *r.as_bytes().first().expect("Registers are always 1 byte"),
+                ));
+                inst.append(&mut imm.as_bytes());
                 inst
             }
             // http://ref.x86asm.net/coder64.html#x0F84
@@ -132,6 +146,7 @@ impl AsAsm for Mnemonic {
         match self {
             Mnemonic::Add(r, v) => format!("add {}, {}", r.as_asm(), v.as_asm()),
             Mnemonic::Cmp(r, v) => format!("cmp {}, {}", r.as_asm(), v.as_asm()),
+            Mnemonic::Imul(r, imm) => format!("imul {}, {}", r.as_asm(), imm.as_asm()),
             Mnemonic::Je(a) => format!("je {}", a.as_asm()),
             Mnemonic::Jg(a) => format!("jg {}", a.as_asm()),
             Mnemonic::Jl(a) => format!("jl {}", a.as_asm()),
