@@ -52,7 +52,10 @@ impl Patchable for Program {
                 Mnemonic::Label(label) => {
                     labels.insert(label.clone(), bytes);
                 }
-                Mnemonic::Jg(addr) | Mnemonic::Jl(addr) | Mnemonic::Jmp(addr)
+                Mnemonic::Je(addr)
+                | Mnemonic::Jg(addr)
+                | Mnemonic::Jl(addr)
+                | Mnemonic::Jmp(addr)
                     if !addr.label().is_empty() =>
                 {
                     let t = labels
