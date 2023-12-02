@@ -17,17 +17,12 @@ fn main() -> std::io::Result<()> {
         use tiny_elf::asm::{Memory, Mnemonic::*, Register::*};
 
         Program::default()
-            .add(Push(6u8.into()))
-            .add(Cmp(Rsp, 5))
-            .add(Jmp("print".into()))
+            .add(Mov(Rbx, 2u32.into()))
+            .add(Imul(Rbx, 2u8.into()))
+            .add(Cmp(Rbx, 4))
+            .add(Je("print".into()))
             .label("read")
             .add(Mov(Rax, 0u32.into()))
-            .add(Mov(Rdi, 1u32.into()))
-            .add(Mov(Rsi, Memory::from("msg").into()))
-            .add(Mov(Rdx, word_len.into()))
-            .add(Syscall)
-            .label("print")
-            .add(Mov(Rax, 1u32.into()))
             .add(Mov(Rdi, 1u32.into()))
             .add(Mov(Rsi, Memory::from("msg").into()))
             .add(Mov(Rdx, word_len.into()))
@@ -35,9 +30,26 @@ fn main() -> std::io::Result<()> {
             .label("printn")
             .add(Mov(Rax, 1u32.into()))
             .add(Mov(Rdi, 1u32.into()))
-            .add(Push(53u8.into()))
+            // push what to print on stack, 10 being \n
+            .add(Push(10u8.into()))
+            .add(Push(5u8.into()))
+            // "convert" number 5 to ascii
+            .add(Pop(Rbx))
+            .add(Add(Rbx, 48u32.into()))
+            .add(Push(Rbx.into()))
+            // Give parameter
             .add(Mov(Rsi, Rsp.into()))
-            .add(Mov(Rdx, 1u32.into()))
+            // clear stack
+            .add(Pop(Rbx))
+            .add(Pop(Rbx))
+            // back to normal
+            .add(Mov(Rdx, 16u32.into())) // 8 bytes addresses
+            .add(Syscall)
+            .label("print")
+            .add(Mov(Rax, 1u32.into()))
+            .add(Mov(Rdi, 1u32.into()))
+            .add(Mov(Rsi, Memory::from("msg").into()))
+            .add(Mov(Rdx, word_len.into()))
             .add(Syscall)
             .label("stop")
             .add(Mov(Rax, 60u32.into()))
