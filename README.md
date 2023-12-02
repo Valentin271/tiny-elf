@@ -14,3 +14,4 @@ It is part of a wider project aiming to compile a tiny-basic-like language down 
 - <https://fr.wikibooks.org/wiki/Programmation_Assembleur/x86/Registres>
 - <https://gist.github.com/mikesmullin/6259449>
 - <https://www.sandpile.org/index.htm>
+- <http://blog.rchapman.org/posts/Linux_System_Call_Table_for_x86_64/>

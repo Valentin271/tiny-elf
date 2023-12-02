@@ -9,7 +9,6 @@ use crate::prelude::AsBytes;
 pub enum Mnemonic {
     Add(Register, u32),
     Cmp(Register, u32),
-    Int(u8),
     Je(Memory),
     Jg(Memory),
     Jl(Memory),
@@ -19,10 +18,7 @@ pub enum Mnemonic {
     Pop(Register),
     Push(Operand),
     Sub(Register, u32),
-    /// This is just a convenient mnemonic to call [`Int(0x80)`](Self::Int).
-    ///
-    /// This is not the `syscall` mnemonic for 64 bits syscalls, thus the name.
-    Syscall32,
+    Syscall,
 }
 
 impl AsBytes for Mnemonic {
@@ -39,12 +35,6 @@ impl AsBytes for Mnemonic {
             Mnemonic::Cmp(r, v) => {
                 let mut inst = vec![0x48, 0x81];
                 inst.append(&mut r.as_bytes_opcode_extend(7));
-                inst.append(&mut v.as_bytes());
-                inst
-            }
-            // http://ref.x86asm.net/coder64.html#xCD
-            Mnemonic::Int(v) => {
-                let mut inst = vec![0xCD];
                 inst.append(&mut v.as_bytes());
                 inst
             }
@@ -123,7 +113,8 @@ impl AsBytes for Mnemonic {
                 inst.append(&mut v.as_bytes());
                 inst
             }
-            Mnemonic::Syscall32 => Mnemonic::Int(0x80).as_bytes(),
+            // http://ref.x86asm.net/coder64.html#x0F05
+            Mnemonic::Syscall => vec![0x0f, 0x05],
         }
     }
 }
@@ -133,7 +124,6 @@ impl AsAsm for Mnemonic {
         match self {
             Mnemonic::Add(r, v) => format!("add {}, {}", r.as_asm(), v),
             Mnemonic::Cmp(r, v) => format!("cmp {}, {}", r.as_asm(), v),
-            Mnemonic::Int(v) => format!("int {v}"),
             Mnemonic::Je(a) => format!("je {}", a.as_asm()),
             Mnemonic::Jg(a) => format!("jg {}", a.as_asm()),
             Mnemonic::Jl(a) => format!("jl {}", a.as_asm()),
@@ -143,7 +133,7 @@ impl AsAsm for Mnemonic {
             Mnemonic::Pop(r) => format!("pop {}", r.as_asm()),
             Mnemonic::Push(o) => format!("push {}", o.as_asm()),
             Mnemonic::Sub(r, v) => format!("sub {}, {}", r.as_asm(), v),
-            Mnemonic::Syscall32 => Mnemonic::Int(0x80).as_asm(),
+            Mnemonic::Syscall => "syscall".into(),
         }
     }
 }
