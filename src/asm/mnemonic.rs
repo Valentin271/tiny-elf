@@ -1,4 +1,4 @@
-use super::{register::Register, AsAsm, Immediate, Memory, Operand};
+use super::{register::Register, AsAsm, Immediate, Immediate::*, Memory, Operand};
 use crate::prelude::AsBytes;
 
 /// # See
@@ -7,7 +7,7 @@ use crate::prelude::AsBytes;
 /// <https://wiki.osdev.org/X86-64_Instruction_Encoding#ModR.2FM>
 #[derive(Debug, Clone)]
 pub enum Mnemonic {
-    Add(Register, u32),
+    Add(Register, Immediate),
     Cmp(Register, u32),
     Je(Memory),
     Jg(Memory),
@@ -17,18 +17,22 @@ pub enum Mnemonic {
     Mov(Register, Operand),
     Pop(Register),
     Push(Operand),
-    Sub(Register, u32),
+    Sub(Register, Immediate),
     Syscall,
 }
 
 impl AsBytes for Mnemonic {
     fn as_bytes(&self) -> Vec<u8> {
         match self {
-            // http://ref.x86asm.net/coder64.html#x81
-            Mnemonic::Add(r, v) => {
-                let mut inst = vec![0x48, 0x81];
+            Mnemonic::Add(r, imm) => {
+                let mut inst = match imm {
+                    // http://ref.x86asm.net/coder64.html#x83
+                    Imm8(_) => vec![0x48, 0x83],
+                    // http://ref.x86asm.net/coder64.html#x81
+                    Imm16(_) | Imm32(_) => vec![0x48, 0x81],
+                };
                 inst.append(&mut r.as_bytes());
-                inst.append(&mut v.as_bytes());
+                inst.append(&mut imm.as_bytes());
                 inst
             }
             // http://ref.x86asm.net/coder64.html#x81_7
@@ -73,13 +77,13 @@ impl AsBytes for Mnemonic {
                     inst
                 }
                 // http://ref.x86asm.net/coder64.html#xC7
-                Operand::Mem(_) | Operand::Imm(Immediate::Imm16(_) | Immediate::Imm32(_)) => {
+                Operand::Mem(_) | Operand::Imm(Imm16(_) | Imm32(_)) => {
                     let mut inst = vec![0x48, 0xC7];
                     inst.append(&mut r.as_bytes());
                     inst.append(&mut o.as_bytes());
                     inst
                 }
-                Operand::Imm(Immediate::Imm8(_)) => unimplemented!(),
+                Operand::Imm(Imm8(_)) => unimplemented!(),
             },
             // http://ref.x86asm.net/coder64.html#x8F
             Mnemonic::Pop(r) => {
@@ -97,20 +101,24 @@ impl AsBytes for Mnemonic {
                 Operand::Imm(i) => {
                     let mut inst = match i {
                         // http://ref.x86asm.net/coder64.html#x6A
-                        Immediate::Imm8(_) => vec![0x6A],
+                        Imm8(_) => vec![0x6A],
                         // http://ref.x86asm.net/coder64.html#x68
-                        Immediate::Imm16(_) | Immediate::Imm32(_) => vec![0x68],
+                        Imm16(_) | Imm32(_) => vec![0x68],
                     };
                     inst.append(&mut i.as_bytes());
                     inst
                 }
                 Operand::Mem(_) => unimplemented!(),
             },
-            // http://ref.x86asm.net/coder64.html#x81_5
-            Mnemonic::Sub(r, v) => {
-                let mut inst = vec![0x48, 0x81];
+            Mnemonic::Sub(r, imm) => {
+                let mut inst = match imm {
+                    // http://ref.x86asm.net/coder64.html#x83_5
+                    Imm8(_) => vec![0x48, 0x83],
+                    // http://ref.x86asm.net/coder64.html#x81_5
+                    Imm16(_) | Imm32(_) => vec![0x48, 0x81],
+                };
                 inst.append(&mut r.as_bytes_opcode_extend(5));
-                inst.append(&mut v.as_bytes());
+                inst.append(&mut imm.as_bytes());
                 inst
             }
             // http://ref.x86asm.net/coder64.html#x0F05
@@ -122,8 +130,8 @@ impl AsBytes for Mnemonic {
 impl AsAsm for Mnemonic {
     fn as_asm(&self) -> String {
         match self {
-            Mnemonic::Add(r, v) => format!("add {}, {}", r.as_asm(), v),
-            Mnemonic::Cmp(r, v) => format!("cmp {}, {}", r.as_asm(), v),
+            Mnemonic::Add(r, v) => format!("add {}, {}", r.as_asm(), v.as_asm()),
+            Mnemonic::Cmp(r, v) => format!("cmp {}, {}", r.as_asm(), v.as_asm()),
             Mnemonic::Je(a) => format!("je {}", a.as_asm()),
             Mnemonic::Jg(a) => format!("jg {}", a.as_asm()),
             Mnemonic::Jl(a) => format!("jl {}", a.as_asm()),
@@ -132,7 +140,7 @@ impl AsAsm for Mnemonic {
             Mnemonic::Mov(r, o) => format!("mov {}, {}", r.as_asm(), o.as_asm()),
             Mnemonic::Pop(r) => format!("pop {}", r.as_asm()),
             Mnemonic::Push(o) => format!("push {}", o.as_asm()),
-            Mnemonic::Sub(r, v) => format!("sub {}, {}", r.as_asm(), v),
+            Mnemonic::Sub(r, v) => format!("sub {}, {}", r.as_asm(), v.as_asm()),
             Mnemonic::Syscall => "syscall".into(),
         }
     }
