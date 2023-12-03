@@ -54,24 +54,30 @@ impl Program {
     pub fn func_end(self) -> Self {
         use crate::asm::{Mnemonic::*, Register::*};
 
-        self.add(Mov(Rsp, Rbp.into())).add(Pop(Rbp.into())).add(Ret)
+        self.add(Mov(Rsp, Rbp.into())).add(Pop(Rbp)).add(Ret)
     }
 }
 
 impl Patchable for Program {
     fn backpatch(&mut self, _start_addr: u32, data_addr: u32) {
-        let mut labels = HashMap::<String, u32>::default();
+        let mut labels = HashMap::<String, i32>::default();
         let data_labels = self.data.addresses(data_addr);
-        let mut bytes: u32 = 0;
+        let mut current_byte: i32 = 0;
 
-        for inst in self.instructions.iter_mut().rev() {
-            let instr_size = inst.as_bytes().len() as u32;
-            bytes += instr_size;
+        for inst in self.instructions.iter() {
+            current_byte += inst.as_bytes().len() as i32;
+
+            if let Mnemonic::Label(label) = inst {
+                labels.insert(label.clone(), current_byte);
+            }
+        }
+
+        let mut current_byte: i32 = 0;
+
+        for inst in self.instructions.iter_mut() {
+            current_byte += inst.as_bytes().len() as i32;
 
             match inst {
-                Mnemonic::Label(label) => {
-                    labels.insert(label.clone(), bytes);
-                }
                 Mnemonic::Call(addr)
                 | Mnemonic::Je(addr)
                 | Mnemonic::Jg(addr)
@@ -79,18 +85,18 @@ impl Patchable for Program {
                 | Mnemonic::Jmp(addr)
                     if !addr.label().is_empty() =>
                 {
-                    let t = labels
+                    let label_addr = labels
                         .get(addr.label())
-                        .unwrap_or_else(|| panic!("Jump label '{}' not found", addr.label()));
+                        .unwrap_or_else(|| panic!("Label '{}' not found", addr.label()));
 
-                    addr.set_addr(bytes - t - instr_size);
+                    addr.set_addr(label_addr - current_byte);
                 }
                 Mnemonic::Mov(_, Operand::Mem(addr)) if !addr.label().is_empty() => {
-                    let t = *data_labels
+                    let data_addr = *data_labels
                         .get(addr.label())
-                        .unwrap_or_else(|| panic!("Mov label '{}' not found", addr.label()));
+                        .unwrap_or_else(|| panic!("Label '{}' not found", addr.label()));
 
-                    addr.set_addr(t);
+                    addr.set_addr(data_addr as i32);
                 }
                 _ => (),
             }

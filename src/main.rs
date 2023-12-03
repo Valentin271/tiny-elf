@@ -12,6 +12,7 @@ fn main() -> std::io::Result<()> {
         .nth(1)
         .unwrap_or("Hello World, this is my tiny executable\n".into());
     let word_len = word.len() as i32;
+    let upward_data = "We went upward\n";
 
     let program = {
         use tiny_elf::asm::{Memory, Mnemonic::*, Register::*};
@@ -21,35 +22,23 @@ fn main() -> std::io::Result<()> {
             .add(Imul(Rbx, (-2i8).into()))
             .add(Cmp(Rbx, 4))
             .add(Je("foo".into()))
+            .label("upward")
+            .insert_data("upward_data", upward_data)
+            .add(Mov(Rsi, Memory::from("upward_data").into()))
+            .add(Mov(Rdx, (upward_data.len() as i32).into()))
+            .add(Call("print".into()))
+            .add(Jmp("exit".into()))
             .label("read")
             .add(Mov(Rax, 0.into()))
             .add(Mov(Rdi, 0.into()))
             .add(Mov(Rsi, Memory::from("msg").into()))
             .add(Mov(Rdx, word_len.into()))
             .add(Syscall)
-            .label("printn")
-            .add(Mov(Rax, 1.into()))
-            .add(Mov(Rdi, 1.into()))
-            // push what to print on stack, 10 being \n
-            .add(Push(10.into()))
-            .add(Push(5.into()))
-            // "convert" number 5 to ascii
-            .add(Pop(Rbx))
-            .add(Add(Rbx, 48.into()))
-            .add(Push(Rbx.into()))
-            // Give parameter
-            .add(Mov(Rsi, Rsp.into()))
-            // clear stack
-            .add(Pop(Rbx))
-            .add(Pop(Rbx))
-            // back to normal
-            .add(Mov(Rdx, 16.into())) // 8 bytes addresses
-            .add(Syscall)
             .label("foo")
             .add(Mov(Rsi, Memory::from("msg").into()))
             .add(Mov(Rdx, word_len.into()))
             .add(Call("print".into()))
-            .add(Jmp("exit".into()))
+            .add(Jmp("upward".into()))
             // functions
             .func("print")
             .add(Mov(Rax, 1.into()))

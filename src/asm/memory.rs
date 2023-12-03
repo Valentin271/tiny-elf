@@ -3,7 +3,7 @@ use crate::prelude::AsBytes;
 
 #[derive(Debug, Clone)]
 pub struct Memory {
-    addr: u32,
+    addr: i32,
     label: String,
 }
 
@@ -12,7 +12,7 @@ impl Memory {
         self.label.as_ref()
     }
 
-    pub fn set_addr(&mut self, addr: u32) {
+    pub fn set_addr(&mut self, addr: i32) {
         self.addr = addr;
     }
 }
