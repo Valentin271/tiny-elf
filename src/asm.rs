@@ -1,4 +1,5 @@
 mod immediate;
+mod instruction;
 mod memory;
 mod mnemonic;
 mod operand;
@@ -6,6 +7,7 @@ mod program;
 mod register;
 
 pub use immediate::*;
+pub use instruction::*;
 pub use memory::*;
 pub use mnemonic::*;
 pub use operand::*;

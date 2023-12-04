@@ -57,6 +57,15 @@ impl Register {
             .expect("Register is always referenced by at least a byte")
             .add(op << 3)]
     }
+
+    /// Determines if this register is an extended register.
+    ///
+    /// See
+    /// <https://stackoverflow.com/questions/35379820/what-do-instruction-prefixes-mean-in-modern-x86>
+    pub fn is_extended(&self) -> bool {
+        use Register::*;
+        matches!(self, R8 | R9 | R10 | R11 | R12 | R13 | R14 | R15)
+    }
 }
 
 impl AsBytes for Register {
@@ -70,14 +79,14 @@ impl AsBytes for Register {
             Register::Rbp => vec![0xC5],
             Register::Rsi => vec![0xC6],
             Register::Rdi => vec![0xC7],
-            Register::R8 => vec![0xC8],
-            Register::R9 => vec![0xC9],
-            Register::R10 => vec![0xCA],
-            Register::R11 => vec![0xCB],
-            Register::R12 => vec![0xCC],
-            Register::R13 => vec![0xCD],
-            Register::R14 => vec![0xCE],
-            Register::R15 => vec![0xCF],
+            Register::R8 => vec![0xC0],
+            Register::R9 => vec![0xC1],
+            Register::R10 => vec![0xC2],
+            Register::R11 => vec![0xC3],
+            Register::R12 => vec![0xC4],
+            Register::R13 => vec![0xC5],
+            Register::R14 => vec![0xC6],
+            Register::R15 => vec![0xC7],
         }
     }
 }
