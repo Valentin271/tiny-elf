@@ -17,8 +17,11 @@ pub enum Mnemonic {
     Imul(Register, Operand),
     Je(Memory),
     Jg(Memory),
+    Jge(Memory),
     Jl(Memory),
+    Jle(Memory),
     Jmp(Memory),
+    Jne(Memory),
     Label(String),
     Mov(Register, Operand),
     Pop(Register),
@@ -125,6 +128,12 @@ impl AsBytes for Mnemonic {
                 inst.append(&mut a.as_bytes());
                 inst
             }
+            // http://ref.x86asm.net/coder64.html#x0F8D
+            Mnemonic::Jge(a) => {
+                let mut inst = vec![0x0F, 0x8D];
+                inst.append(&mut a.as_bytes());
+                inst
+            }
             // http://ref.x86asm.net/coder64.html#x0F8F
             Mnemonic::Jg(a) => {
                 let mut inst = vec![0x0F, 0x8F];
@@ -137,10 +146,22 @@ impl AsBytes for Mnemonic {
                 inst.append(&mut a.as_bytes());
                 inst
             }
+            // http://ref.x86asm.net/coder64.html#x0F8E
+            Mnemonic::Jle(a) => {
+                let mut inst = vec![0x0F, 0x8E];
+                inst.append(&mut a.as_bytes());
+                inst
+            }
             // http://ref.x86asm.net/coder64.html#xE9
             Mnemonic::Jmp(mem) => Instruction::with_prefix(REXW, 0xE9)
                 .operand(&mut mem.as_bytes())
                 .as_bytes(),
+            // http://ref.x86asm.net/coder64.html#x0F85
+            Mnemonic::Jne(mem) => {
+                let mut inst = vec![0x0F, 0x85];
+                inst.append(&mut mem.as_bytes());
+                inst
+            }
             Mnemonic::Label(_) => vec![],
             Mnemonic::Mov(r, o) => match o {
                 // http://ref.x86asm.net/coder64.html#x8B
@@ -257,8 +278,11 @@ impl AsAsm for Mnemonic {
             Mnemonic::Imul(r, imm) => format!("imul {}, {}", r.as_asm(), imm.as_asm()),
             Mnemonic::Je(a) => format!("je {}", a.as_asm()),
             Mnemonic::Jg(a) => format!("jg {}", a.as_asm()),
+            Mnemonic::Jge(a) => format!("jge {}", a.as_asm()),
             Mnemonic::Jl(a) => format!("jl {}", a.as_asm()),
+            Mnemonic::Jle(a) => format!("jle {}", a.as_asm()),
             Mnemonic::Jmp(a) => format!("jmp {}", a.as_asm()),
+            Mnemonic::Jne(a) => format!("jne {}", a.as_asm()),
             Mnemonic::Label(l) => format!("\n{l}:"),
             Mnemonic::Mov(r, o) => format!("mov {}, {}", r.as_asm(), o.as_asm()),
             Mnemonic::Pop(r) => format!("pop {}", r.as_asm()),

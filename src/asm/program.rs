@@ -80,8 +80,11 @@ impl Patchable for Program {
             match inst {
                 Mnemonic::Call(addr)
                 | Mnemonic::Je(addr)
+                | Mnemonic::Jne(addr)
                 | Mnemonic::Jg(addr)
+                | Mnemonic::Jge(addr)
                 | Mnemonic::Jl(addr)
+                | Mnemonic::Jle(addr)
                 | Mnemonic::Jmp(addr)
                     if !addr.label().is_empty() =>
                 {
