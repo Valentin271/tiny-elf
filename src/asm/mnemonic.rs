@@ -30,6 +30,7 @@ pub enum Mnemonic {
     Ret,
     Sub(Register, Operand),
     Syscall,
+    Xor(Register, Operand),
 }
 
 impl AsBytes for Mnemonic {
@@ -265,6 +266,27 @@ impl AsBytes for Mnemonic {
             }
             // http://ref.x86asm.net/coder64.html#x0F05
             Mnemonic::Syscall => vec![0x0f, 0x05],
+            Mnemonic::Xor(r, op) => match op {
+                Operand::Imm(_) | Operand::Mem(_) => unimplemented!(),
+                Operand::Reg(r2) => {
+                    let mut prefix = REXW;
+                    if r.is_extended() {
+                        prefix |= REXB;
+                    }
+                    if r2.is_extended() {
+                        prefix |= REXR;
+                    }
+                    let inst = Instruction::with_prefix(prefix, 0x33);
+                    inst.operand(
+                        &mut r2
+                            .as_bytes_opcode_extend(
+                                *r.as_bytes().first().expect(EXPECT_ONE_BYTE_REGISTER),
+                            )
+                            .as_bytes(),
+                    )
+                    .as_bytes()
+                }
+            },
         }
     }
 }
@@ -290,6 +312,7 @@ impl AsAsm for Mnemonic {
             Mnemonic::Ret => "ret".into(),
             Mnemonic::Sub(r, v) => format!("sub {}, {}", r.as_asm(), v.as_asm()),
             Mnemonic::Syscall => "syscall".into(),
+            Mnemonic::Xor(r, o) => format!("xor {}, {}", r.as_asm(), o.as_asm()),
         }
     }
 }
