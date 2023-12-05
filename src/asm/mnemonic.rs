@@ -1,5 +1,5 @@
 use super::{
-    register::Register, AsAsm, Immediate::*, Instruction, Memory, Operand, REXB, REXR, REXW,
+    register::Register, AsAsm, Either, Immediate::*, Instruction, Memory, Operand, RexPrefix,
 };
 use crate::prelude::AsBytes;
 
@@ -40,181 +40,111 @@ impl AsBytes for Mnemonic {
                 match op {
                     Operand::Mem(_) => unimplemented!(),
                     Operand::Imm(imm) => {
-                        let mut prefix = REXW;
-                        if r.is_extended() {
-                            prefix |= REXB;
-                        }
-                        let mut inst = match imm {
+                        match imm {
                             // http://ref.x86asm.net/coder64.html#x83
-                            Imm8(_) => vec![prefix, 0x83],
+                            Imm8(_) => Instruction::new(0x83),
                             // http://ref.x86asm.net/coder64.html#x81
-                            Imm16(_) | Imm32(_) => vec![prefix, 0x81],
-                        };
-                        inst.append(&mut r.as_bytes());
-                        inst.append(&mut imm.as_bytes());
-                        inst
+                            Imm16(_) | Imm32(_) => Instruction::new(0x81),
+                        }
+                        .operand((*r).into())
+                        .operand((*imm).into())
+                        .as_bytes()
                     }
                     // http://ref.x86asm.net/coder64.html#x03
-                    Operand::Reg(r2) => {
-                        let mut prefix = REXW;
-                        if r.is_extended() {
-                            prefix |= REXB;
-                        }
-                        if r2.is_extended() {
-                            prefix |= REXR;
-                        }
-                        let mut inst = vec![prefix, 0x03];
-                        inst.append(&mut r2.as_bytes_opcode_extend(
-                            *r.as_bytes().first().expect(EXPECT_ONE_BYTE_REGISTER),
-                        ));
-                        inst
-                    }
+                    Operand::Reg(r2) => Instruction::new(0x03)
+                        .op_extended_register(*r, Either::Right(*r2))
+                        .as_bytes(),
                 }
             }
             // http://ref.x86asm.net/coder64.html#xE8
             Mnemonic::Call(mem) => Instruction::new(0xE8)
-                .operand(&mut mem.as_bytes())
+                .operand(mem.to_owned().into())
                 .as_bytes(),
             // http://ref.x86asm.net/coder64.html#x81_7
-            Mnemonic::Cmp(r, v) => {
-                let mut prefix = REXW;
-                if r.is_extended() {
-                    prefix |= REXB;
-                }
-                let mut inst = vec![prefix, 0x81];
-                inst.append(&mut r.as_bytes_opcode_extend(7));
-                inst.append(&mut v.as_bytes());
-                inst
-            }
+            Mnemonic::Cmp(r, v) => Instruction::new(0x81)
+                .op_extended_register(*r, Either::Left(7))
+                .operand((*v).into())
+                .as_bytes(),
             Mnemonic::Imul(r, op) => {
                 match op {
                     Operand::Mem(_) => unimplemented!(),
                     Operand::Imm(imm) => {
-                        let mut prefix = REXW;
-                        if r.is_extended() {
-                            prefix |= REXB;
-                        }
-                        let mut inst = match imm {
+                        match imm {
                             // http://ref.x86asm.net/coder64.html#x6B
-                            Imm8(_) => vec![prefix, 0x6B],
+                            Imm8(_) => Instruction::new(0x6B),
                             // http://ref.x86asm.net/coder64.html#x69
-                            Imm16(_) | Imm32(_) => vec![prefix, 0x69],
-                        };
-                        inst.append(&mut r.as_bytes_opcode_extend(
-                            *r.as_bytes().first().expect(EXPECT_ONE_BYTE_REGISTER),
-                        ));
-                        inst.append(&mut imm.as_bytes());
-                        inst
+                            Imm16(_) | Imm32(_) => Instruction::new(0x69),
+                        }
+                        .op_extended_register(*r, Either::Right(*r))
+                        .operand((*imm).into())
+                        .as_bytes()
                     }
                     // http://ref.x86asm.net/coder64.html#x0FAF
-                    Operand::Reg(r2) => {
-                        let mut prefix = REXW;
-                        if r.is_extended() {
-                            prefix |= REXB;
-                        }
-                        if r2.is_extended() {
-                            prefix |= REXR;
-                        }
-                        let mut inst = vec![prefix, 0x0F, 0xAF];
-                        inst.append(&mut r2.as_bytes_opcode_extend(
-                            *r.as_bytes().first().expect(EXPECT_ONE_BYTE_REGISTER),
-                        ));
-                        inst
-                    }
+                    Operand::Reg(r2) => Instruction::multibyte(vec![0x0F, 0xAF])
+                        .op_extended_register(*r, Either::Right(*r2))
+                        .as_bytes(),
                 }
             }
             // http://ref.x86asm.net/coder64.html#x0F84
-            Mnemonic::Je(a) => {
-                let mut inst = vec![0x0F, 0x84];
-                inst.append(&mut a.as_bytes());
-                inst
-            }
+            Mnemonic::Je(a) => Instruction::multibyte(vec![0x0F, 0x84])
+                .operand(a.to_owned().into())
+                .as_bytes(),
             // http://ref.x86asm.net/coder64.html#x0F8D
-            Mnemonic::Jge(a) => {
-                let mut inst = vec![0x0F, 0x8D];
-                inst.append(&mut a.as_bytes());
-                inst
-            }
+            Mnemonic::Jge(a) => Instruction::multibyte(vec![0x0F, 0x8D])
+                .operand(a.to_owned().into())
+                .as_bytes(),
             // http://ref.x86asm.net/coder64.html#x0F8F
-            Mnemonic::Jg(a) => {
-                let mut inst = vec![0x0F, 0x8F];
-                inst.append(&mut a.as_bytes());
-                inst
-            }
+            Mnemonic::Jg(a) => Instruction::multibyte(vec![0x0F, 0x8F])
+                .operand(a.to_owned().into())
+                .as_bytes(),
             // http://ref.x86asm.net/coder64.html#x0F8C
-            Mnemonic::Jl(a) => {
-                let mut inst = vec![0x0F, 0x8C];
-                inst.append(&mut a.as_bytes());
-                inst
-            }
+            Mnemonic::Jl(a) => Instruction::multibyte(vec![0x0F, 0x8C])
+                .operand(a.to_owned().into())
+                .as_bytes(),
             // http://ref.x86asm.net/coder64.html#x0F8E
-            Mnemonic::Jle(a) => {
-                let mut inst = vec![0x0F, 0x8E];
-                inst.append(&mut a.as_bytes());
-                inst
-            }
+            Mnemonic::Jle(a) => Instruction::multibyte(vec![0x0F, 0x8E])
+                .operand(a.to_owned().into())
+                .as_bytes(),
             // http://ref.x86asm.net/coder64.html#xE9
-            Mnemonic::Jmp(mem) => Instruction::with_prefix(REXW, 0xE9)
-                .operand(&mut mem.as_bytes())
+            Mnemonic::Jmp(mem) => Instruction::new(0xE9)
+                .operand(mem.to_owned().into())
                 .as_bytes(),
             // http://ref.x86asm.net/coder64.html#x0F85
-            Mnemonic::Jne(mem) => {
-                let mut inst = vec![0x0F, 0x85];
-                inst.append(&mut mem.as_bytes());
-                inst
-            }
+            Mnemonic::Jne(mem) => Instruction::multibyte(vec![0x0F, 0x85])
+                .operand(mem.to_owned().into())
+                .as_bytes(),
             Mnemonic::Label(_) => vec![],
             Mnemonic::Mov(r, o) => match o {
                 // http://ref.x86asm.net/coder64.html#x8B
                 Operand::Reg(r2) => {
-                    let mut prefix = REXW;
+                    let mut prefix = RexPrefix::W.bits();
                     if r.is_extended() {
-                        prefix |= REXB;
+                        prefix |= RexPrefix::B.bits();
                     }
                     if r2.is_extended() {
-                        prefix |= REXR;
+                        prefix |= RexPrefix::R.bits();
                     }
                     let mut inst = vec![prefix, 0x89];
+                    // for some reason move register are reversed
                     inst.append(&mut r.as_bytes_opcode_extend(
                         *r2.as_bytes().first().expect(EXPECT_ONE_BYTE_REGISTER),
                     ));
                     inst
                 }
                 // http://ref.x86asm.net/coder64.html#xC7
-                Operand::Mem(_) | Operand::Imm(Imm16(_) | Imm32(_)) => {
-                    let mut inst = if r.is_extended() {
-                        vec![REXB | REXW]
-                    } else {
-                        vec![REXW]
-                    };
-                    inst.append(&mut vec![0xC7]);
-                    inst.append(&mut r.as_bytes());
-                    inst.append(&mut o.as_bytes());
-                    inst
-                }
+                Operand::Mem(_) | Operand::Imm(Imm16(_) | Imm32(_)) => Instruction::new(0xC7)
+                    .operand((*r).into())
+                    .operand(o.to_owned())
+                    .as_bytes(),
                 Operand::Imm(Imm8(_)) => unimplemented!(),
             },
             // http://ref.x86asm.net/coder64.html#x8F
-            Mnemonic::Pop(r) => {
-                let mut prefix = REXW;
-                if r.is_extended() {
-                    prefix |= REXB;
-                }
-                Instruction::with_prefix(prefix, 0x8F)
-                    .operand(&mut r.as_bytes())
-                    .as_bytes()
-            }
+            Mnemonic::Pop(r) => Instruction::new(0x8F).operand((*r).into()).as_bytes(),
             Mnemonic::Push(o) => match o {
                 // http://ref.x86asm.net/coder64.html#xFF_6
-                Operand::Reg(r) => {
-                    let mut prefix = REXW;
-                    if r.is_extended() {
-                        prefix |= REXB;
-                    }
-                    Instruction::with_prefix(prefix, 0xFF)
-                        .operand(&mut r.as_bytes_opcode_extend(6))
-                        .as_bytes()
-                }
+                Operand::Reg(r) => Instruction::new(0xFF)
+                    .op_extended_register(*r, Either::Left(6))
+                    .as_bytes(),
                 Operand::Imm(i) => {
                     match i {
                         // http://ref.x86asm.net/coder64.html#x6A
@@ -222,7 +152,7 @@ impl AsBytes for Mnemonic {
                         // http://ref.x86asm.net/coder64.html#x68
                         Imm16(_) | Imm32(_) => Instruction::new(0x68),
                     }
-                    .operand(&mut i.as_bytes())
+                    .operand((*i).into())
                     .as_bytes()
                 }
                 Operand::Mem(_) => unimplemented!(),
@@ -233,59 +163,29 @@ impl AsBytes for Mnemonic {
                 match op {
                     Operand::Mem(_) => unimplemented!(),
                     Operand::Imm(imm) => {
-                        let mut prefix = REXW;
-                        if r.is_extended() {
-                            prefix |= REXB;
-                        }
-                        let mut inst = match imm {
+                        match imm {
                             // http://ref.x86asm.net/coder64.html#x83_5
-                            Imm8(_) => vec![prefix, 0x83],
+                            Imm8(_) => Instruction::new(0x83),
                             // http://ref.x86asm.net/coder64.html#x81_5
-                            Imm16(_) | Imm32(_) => vec![prefix, 0x81],
-                        };
-                        inst.append(&mut r.as_bytes_opcode_extend(5));
-                        inst.append(&mut imm.as_bytes());
-                        inst
+                            Imm16(_) | Imm32(_) => Instruction::new(0x81),
+                        }
+                        .op_extended_register(*r, Either::Left(5))
+                        .operand((*imm).into())
+                        .as_bytes()
                     }
                     // http://ref.x86asm.net/coder64.html#x2B
-                    Operand::Reg(r2) => {
-                        let mut prefix = REXW;
-                        if r.is_extended() {
-                            prefix |= REXB;
-                        }
-                        if r2.is_extended() {
-                            prefix |= REXR;
-                        }
-                        let mut inst = vec![prefix, 0x2B];
-                        inst.append(&mut r2.as_bytes_opcode_extend(
-                            *r.as_bytes().first().expect(EXPECT_ONE_BYTE_REGISTER),
-                        ));
-                        inst
-                    }
+                    Operand::Reg(r2) => Instruction::new(0x2B)
+                        .op_extended_register(*r, Either::Right(*r2))
+                        .as_bytes(),
                 }
             }
             // http://ref.x86asm.net/coder64.html#x0F05
             Mnemonic::Syscall => vec![0x0f, 0x05],
             Mnemonic::Xor(r, op) => match op {
                 Operand::Imm(_) | Operand::Mem(_) => unimplemented!(),
-                Operand::Reg(r2) => {
-                    let mut prefix = REXW;
-                    if r.is_extended() {
-                        prefix |= REXB;
-                    }
-                    if r2.is_extended() {
-                        prefix |= REXR;
-                    }
-                    let inst = Instruction::with_prefix(prefix, 0x33);
-                    inst.operand(
-                        &mut r2
-                            .as_bytes_opcode_extend(
-                                *r.as_bytes().first().expect(EXPECT_ONE_BYTE_REGISTER),
-                            )
-                            .as_bytes(),
-                    )
-                    .as_bytes()
-                }
+                Operand::Reg(r2) => Instruction::new(0x33)
+                    .op_extended_register(*r, Either::Right(*r2))
+                    .as_bytes(),
             },
         }
     }
@@ -333,7 +233,7 @@ mod tests {
             assert_eq!(
                 bytes,
                 vec![
-                    REXW,
+                    RexPrefix::W.bits(),
                     0xC7,
                     *Rax.as_bytes().first().unwrap(),
                     0x01,
@@ -350,7 +250,7 @@ mod tests {
             assert_eq!(
                 bytes,
                 vec![
-                    REXW | REXB,
+                    RexPrefix::W.bits() | RexPrefix::B.bits(),
                     0xC7,
                     *R8.as_bytes().first().unwrap(),
                     0x1,
@@ -367,7 +267,7 @@ mod tests {
             assert_eq!(
                 bytes,
                 vec![
-                    REXW | REXR,
+                    RexPrefix::W.bits() | RexPrefix::R.bits(),
                     0x89,
                     *Rax.as_bytes_opcode_extend(*R8.as_bytes().first().unwrap())
                         .first()

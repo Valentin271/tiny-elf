@@ -1,7 +1,7 @@
 use super::AsAsm;
 use crate::prelude::AsBytes;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum Immediate {
     Imm8(i8),
     Imm16(i16),
