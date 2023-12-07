@@ -14,6 +14,8 @@ pub enum Mnemonic {
     Add(Register, Operand),
     Call(Memory),
     Cmp(Register, i32),
+    Dec(Register),
+    Inc(Register),
     Imul(Register, Operand),
     Je(Memory),
     Jg(Memory),
@@ -64,6 +66,14 @@ impl AsBytes for Mnemonic {
             Mnemonic::Cmp(r, v) => Instruction::new(0x81)
                 .op_extended_register(*r, Either::Left(7))
                 .operand((*v).into())
+                .as_bytes(),
+            // http://ref.x86asm.net/coder64.html#xFF_1
+            Mnemonic::Dec(r) => Instruction::new(0xFF)
+                .op_extended_register(*r, Either::Left(1))
+                .as_bytes(),
+            // http://ref.x86asm.net/coder64.html#xFF_0
+            Mnemonic::Inc(r) => Instruction::new(0xFF)
+                .op_extended_register(*r, Either::Left(0))
                 .as_bytes(),
             Mnemonic::Imul(r, op) => {
                 match op {
@@ -197,6 +207,8 @@ impl AsAsm for Mnemonic {
             Mnemonic::Add(r, v) => format!("add {}, {}", r.as_asm(), v.as_asm()),
             Mnemonic::Call(mem) => format!("call {}", mem.as_asm()),
             Mnemonic::Cmp(r, v) => format!("cmp {}, {}", r.as_asm(), v),
+            Mnemonic::Dec(r) => format!("dec {}", r.as_asm()),
+            Mnemonic::Inc(r) => format!("inc {}", r.as_asm()),
             Mnemonic::Imul(r, imm) => format!("imul {}, {}", r.as_asm(), imm.as_asm()),
             Mnemonic::Je(a) => format!("je {}", a.as_asm()),
             Mnemonic::Jg(a) => format!("jg {}", a.as_asm()),
