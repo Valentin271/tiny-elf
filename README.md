@@ -15,3 +15,4 @@ It is part of a wider project aiming to compile a tiny-basic-like language down 
 - <https://gist.github.com/mikesmullin/6259449>
 - <https://www.sandpile.org/index.htm>
 - <http://blog.rchapman.org/posts/Linux_System_Call_Table_for_x86_64/>
+- <http://www.c-jump.com/CIS77/CPU/x86/lecture.html>
