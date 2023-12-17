@@ -38,6 +38,10 @@ impl AsBytes for DataSection {
 
 impl AsAsm for DataSection {
     fn as_asm(&self) -> String {
+        if self.data.is_empty() {
+            return String::new();
+        }
+
         let mut out: String = "section .data\n".into();
 
         for d in &self.data {
