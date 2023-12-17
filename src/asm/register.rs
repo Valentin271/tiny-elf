@@ -49,7 +49,7 @@ pub enum Register {
 impl Register {
     /// `op` is left-shifted (`<<`) because of the position it should be.
     ///
-    /// See https://wiki.osdev.org/X86-64_Instruction_Encoding#ModR.2FM
+    /// See <https://wiki.osdev.org/X86-64_Instruction_Encoding#ModR.2FM>
     pub fn as_bytes_opcode_extend(&self, op: u8) -> Vec<u8> {
         vec![self
             .as_bytes()
