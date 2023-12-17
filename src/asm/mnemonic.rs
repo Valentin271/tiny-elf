@@ -15,8 +15,17 @@ pub enum Mnemonic {
     Call(Memory),
     Cmp(Register, i32),
     Dec(Register),
+    /// Dividend needs to be in [`Rax`] before calling `IDiv`.
+    ///
+    /// Remainder is stored in [`Rdx`] while quotient is stored in [`Rax`].
+    ///
+    /// [`Rax`]: Register::Rax
+    /// [`Rdx`]: Register::Rdx
+    ///
+    /// See <https://en.wikibooks.org/wiki/X86_Assembly/Arithmetic#Division>
+    IDiv(Register),
     Inc(Register),
-    Imul(Register, Operand),
+    IMul(Register, Operand),
     Je(Memory),
     Jg(Memory),
     Jge(Memory),
@@ -75,7 +84,11 @@ impl AsBytes for Mnemonic {
             Mnemonic::Inc(r) => Instruction::new(0xFF)
                 .op_extended_register(*r, Either::Left(0))
                 .as_bytes(),
-            Mnemonic::Imul(r, op) => {
+            // http://ref.x86asm.net/coder64.html#xF7_7
+            Mnemonic::IDiv(r) => Instruction::new(0xF7)
+                .op_extended_register(*r, Either::Left(7))
+                .as_bytes(),
+            Mnemonic::IMul(r, op) => {
                 match op {
                     Operand::Mem(_) => unimplemented!(),
                     Operand::Imm(imm) => {
@@ -209,7 +222,8 @@ impl AsAsm for Mnemonic {
             Mnemonic::Cmp(r, v) => format!("cmp {}, {}", r.as_asm(), v),
             Mnemonic::Dec(r) => format!("dec {}", r.as_asm()),
             Mnemonic::Inc(r) => format!("inc {}", r.as_asm()),
-            Mnemonic::Imul(r, imm) => format!("imul {}, {}", r.as_asm(), imm.as_asm()),
+            Mnemonic::IDiv(r) => format!("idiv {}", r.as_asm()),
+            Mnemonic::IMul(r, imm) => format!("imul {}, {}", r.as_asm(), imm.as_asm()),
             Mnemonic::Je(a) => format!("je {}", a.as_asm()),
             Mnemonic::Jg(a) => format!("jg {}", a.as_asm()),
             Mnemonic::Jge(a) => format!("jge {}", a.as_asm()),

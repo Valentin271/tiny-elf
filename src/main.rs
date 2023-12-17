@@ -18,9 +18,10 @@ fn main() -> std::io::Result<()> {
         use tiny_elf::asm::{Memory, Mnemonic::*, Register::*};
 
         Program::default()
-            .add(Mov(Rbx, (-2).into()))
-            .add(Imul(Rbx, (-2i8).into()))
-            .add(Cmp(Rbx, 4))
+            .add(Mov(Rax, 8.into()))
+            .add(Mov(Rbx, 2.into()))
+            .add(IDiv(Rbx))
+            .add(Cmp(Rax, 4))
             .add(Je("foo".into()))
             .label("upward")
             .insert_data("upward_data", upward_data)
