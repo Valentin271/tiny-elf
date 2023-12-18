@@ -2,7 +2,7 @@
 
 This is a toy project for generating an [ELF](https://en.wikipedia.org/wiki/Executable_and_Linkable_Format) file.
 
-It also has a feature enabling the write of very basic assembly. This assembly can then be dump in a source file or written to the ELF file.  
+It also has a feature enabling the writing of very basic assembly. This assembly can then be dumped as a source file or written to the ELF file.  
 [main.rs](src/main.rs) demonstrate this.
 
 It is part of a wider project aiming to compile a tiny-basic-like language down to machine code. This project is part of my studies.
