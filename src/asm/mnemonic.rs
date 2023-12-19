@@ -13,7 +13,7 @@ const EXPECT_ONE_BYTE_REGISTER: &str = "Registers are always 1 byte";
 pub enum Mnemonic {
     Add(Register, Operand),
     Call(Memory),
-    Cmp(Register, i32),
+    Cmp(Register, Operand),
     Dec(Register),
     /// Dividend needs to be in [`Rax`] before calling `IDiv`.
     ///
@@ -71,11 +71,18 @@ impl AsBytes for Mnemonic {
             Mnemonic::Call(mem) => Instruction::new(0xE8)
                 .operand(mem.to_owned().into())
                 .as_bytes(),
-            // http://ref.x86asm.net/coder64.html#x81_7
-            Mnemonic::Cmp(r, v) => Instruction::new(0x81)
-                .op_extended_register(*r, Either::Left(7))
-                .operand((*v).into())
-                .as_bytes(),
+            Mnemonic::Cmp(r, o) => match o {
+                // http://ref.x86asm.net/coder64.html#x81_7
+                Operand::Imm(i) => Instruction::new(0x81)
+                    .op_extended_register(*r, Either::Left(7))
+                    .operand((*i).into())
+                    .as_bytes(),
+                // http://ref.x86asm.net/coder64.html#x39
+                Operand::Reg(r2) => Instruction::new(0x39)
+                    .op_extended_register(*r2, Either::Right(*r))
+                    .as_bytes(),
+                Operand::Mem(_) => unimplemented!(),
+            },
             // http://ref.x86asm.net/coder64.html#xFF_1
             Mnemonic::Dec(r) => Instruction::new(0xFF)
                 .op_extended_register(*r, Either::Left(1))
@@ -219,7 +226,7 @@ impl AsAsm for Mnemonic {
         match self {
             Mnemonic::Add(r, v) => format!("add {}, {}", r.as_asm(), v.as_asm()),
             Mnemonic::Call(mem) => format!("call {}", mem.as_asm()),
-            Mnemonic::Cmp(r, v) => format!("cmp {}, {}", r.as_asm(), v),
+            Mnemonic::Cmp(r, o) => format!("cmp {}, {}", r.as_asm(), o.as_asm()),
             Mnemonic::Dec(r) => format!("dec {}", r.as_asm()),
             Mnemonic::Inc(r) => format!("inc {}", r.as_asm()),
             Mnemonic::IDiv(r) => format!("idiv {}", r.as_asm()),
