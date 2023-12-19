@@ -9,7 +9,7 @@ use crate::{patchable::Patchable, prelude::AsBytes};
 
 #[derive(Default, Clone)]
 pub struct Program {
-    instructions: Vec<Mnemonic>,
+    pub instructions: Vec<Mnemonic>,
     data: DataSection,
 }
 
